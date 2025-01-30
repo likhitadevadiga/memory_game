@@ -9,11 +9,10 @@ class FirestoreService {
       final String playerName = userData['name'];
       final docRef = _firestore.collection('users2').doc(playerName);
 
-      // Get existing document
+     
       DocumentSnapshot snapshot = await docRef.get();
 
       if (!snapshot.exists) {
-        // First time player - create new document
         await docRef.set({
           'playerInfo': {
             'name': userData['name'],
@@ -40,7 +39,6 @@ class FirestoreService {
         return;
       }
 
-      // Existing player - add new session
       Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
       List<dynamic> sessions = data['gameSessions'] ?? [];
       int nextSessionNumber = sessions.length + 1;
@@ -81,12 +79,11 @@ class FirestoreService {
 
       Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
       List<dynamic> sessions = List.from(data['gameSessions']);
-
-      // Update the latest session
+      
       int currentSessionIndex = sessions.length - 1;
       Map<String, dynamic> currentSession = Map.from(sessions[currentSessionIndex]);
 
-      // Update game data for current session
+
       if (isQuitting) {
         currentSession['gameData']['quitCount'] = (currentSession['gameData']['quitCount'] ?? 0) + 1;
       } else {
@@ -117,7 +114,6 @@ class FirestoreService {
 
       if (snapshot.exists) {
         Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-        // Get the latest session
         List<dynamic> sessions = data['gameSessions'];
         Map<String, dynamic> latestSession = sessions.last;
 
@@ -149,7 +145,6 @@ class FirestoreService {
       int currentSessionIndex = sessions.length - 1;
       Map<String, dynamic> currentSession = Map.from(sessions[currentSessionIndex]);
 
-      // Fetch all players' game data for the same difficulty
       QuerySnapshot allPlayerSnapshots = await _firestore
           .collection('users2')
           .where('gameSessions.gameData.difficulty', isEqualTo: gameData['difficulty'])
@@ -160,7 +155,6 @@ class FirestoreService {
         Map<String, dynamic> playerData = playerDoc.data() as Map<String, dynamic>;
         List<dynamic> playerSessions = playerData['gameSessions'];
 
-        // Consider the latest session for each player
         if (playerSessions.isNotEmpty) {
           Map<String, dynamic> lastSession = playerSessions.last;
           double successRate = lastSession['gameData']['successfulAttempts'] / lastSession['gameData']['attempts'];
@@ -168,13 +162,12 @@ class FirestoreService {
         }
       }
 
-      // Calculate percentile
       successRates.sort();
       double playerSuccessRate = currentSession['gameData']['successfulAttempts'] / currentSession['gameData']['attempts'];
       int lowerRatesCount = successRates.where((rate) => rate < playerSuccessRate).length;
       double percentile = (lowerRatesCount / successRates.length) * 100;
 
-      // Store percentile in the current session
+
       currentSession['gameData']['percentile'] = percentile.roundToDouble();
 
       sessions[currentSessionIndex] = currentSession;
